@@ -1,10 +1,10 @@
 const express = require("express");
 const passport = require("passport");
 const passportJwt = require("passport-jwt");
-const jwt = require("jsonwebtoken");
 
-const bookRepository = require("./repositories/bookRepository");
 const accountRepository = require("./repositories/accountRepository");
+const bookService = require("./services/bookService");
+const accountService = require("./services/accountService");
 
 const secret = "secret";
 
@@ -38,7 +38,7 @@ const app = express();
 app.use(passport.initialize());
 
 app.get("/books", passport.authenticate("jwt", { session: false }), (request, response) => {
-    bookRepository
+    bookService
         .getAllBooks()
         .then(function (books) {
             response.send(books);
@@ -53,13 +53,13 @@ app.get("/login", (request, response) => {
     const username = request.query.username;
     const password = request.query.password;
 
-    accountRepository
-        .canUserLogin(username, password)
-        .then((ableToLogin) => {
-            if (ableToLogin) {
+    accountService
+        .getJwtForUser(username, password)
+        .then((token) => {
+            if (token) {
                 response.send({
                     message: `Hello, ${username}`,
-                    token: createTokenForUser(username),
+                    token: token,
                 });
             } else {
                 response.status(400).send({
@@ -72,10 +72,6 @@ app.get("/login", (request, response) => {
             console.error(error);
         });
 });
-
-function createTokenForUser(username) {
-    return jwt.sign({ username: username }, secret);
-}
 
 app.listen(3000, () => {
     console.log("Bookish is listening on port 3000");

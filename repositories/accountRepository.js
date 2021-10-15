@@ -6,7 +6,7 @@ function doesUsernameExist(username) {
     });
 }
 
-function canUserLogin(username, password) {
+function doesUsernameAndPasswordExist(username, password) {
     return db
         .any(`SELECT * FROM Account WHERE username = $1 AND password = $2`, [username, password])
         .then((accounts) => {
@@ -16,5 +16,5 @@ function canUserLogin(username, password) {
 
 module.exports = {
     doesUsernameExist: doesUsernameExist,
-    canUserLogin: canUserLogin,
+    doesUsernameAndPasswordExist: doesUsernameAndPasswordExist,
 };
