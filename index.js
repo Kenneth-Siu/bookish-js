@@ -1,9 +1,10 @@
 const express = require("express");
-const pgp = require("pg-promise")();
-const connectionString = require("./config.js");
 const passport = require("passport");
 const passportJwt = require("passport-jwt");
 const jwt = require("jsonwebtoken");
+
+const bookRepository = require("./repositories/bookRepository");
+const accountRepository = require("./repositories/accountRepository");
 
 const secret = "secret";
 
@@ -16,11 +17,11 @@ passport.use(
     new passportJwt.Strategy(options, function (decodedJwt, next) {
         const username = decodedJwt.username;
 
-        db.any("SELECT * FROM Account")
-            .then(function (data) {
-                const account = data.find((account) => account.username === username);
-                if (account !== undefined) {
-                    next(null, account);
+        accountRepository
+            .doesUsernameExist(username)
+            .then((exists) => {
+                if (exists) {
+                    next(null, username);
                 } else {
                     next(null, false);
                 }
@@ -32,14 +33,15 @@ passport.use(
     })
 );
 
-const db = pgp(connectionString);
-
 const app = express();
 
-app.get("/books", (request, response) => {
-    db.any("SELECT * FROM Book")
-        .then(function (data) {
-            response.send(data);
+app.use(passport.initialize());
+
+app.get("/books", passport.authenticate("jwt", { session: false }), (request, response) => {
+    bookRepository
+        .getAllBooks()
+        .then(function (books) {
+            response.send(books);
         })
         .catch(function (error) {
             response.status(500);
@@ -51,12 +53,10 @@ app.get("/login", (request, response) => {
     const username = request.query.username;
     const password = request.query.password;
 
-    db.any("SELECT * FROM Account")
-        .then(function (data) {
-            const account = data.find(
-                (account) => account.username === username && account.password === password
-            );
-            if (account !== undefined) {
+    accountRepository
+        .canUserLogin(username, password)
+        .then((ableToLogin) => {
+            if (ableToLogin) {
                 response.send({
                     message: `Hello, ${username}`,
                     token: createTokenForUser(username),
