@@ -3,14 +3,14 @@ const passport = require("passport");
 const passportJwt = require("passport-jwt");
 
 const accountRepository = require("./repositories/accountRepository");
-const bookService = require("./services/bookService");
-const accountService = require("./services/accountService");
 
-const secret = "secret";
+const bookController = require("./controllers/bookController");
+const loginController = require("./controllers/loginController");
+const config = require("./config");
 
 const options = {
     jwtFromRequest: passportJwt.ExtractJwt.fromHeader("x-access-token"),
-    secretOrKey: secret,
+    secretOrKey: config.secret,
 };
 
 passport.use(
@@ -37,41 +37,8 @@ const app = express();
 
 app.use(passport.initialize());
 
-app.get("/books", passport.authenticate("jwt", { session: false }), (request, response) => {
-    bookService
-        .getAllBooks()
-        .then(function (books) {
-            response.send(books);
-        })
-        .catch(function (error) {
-            response.status(500);
-            console.error(error);
-        });
-});
-
-app.get("/login", (request, response) => {
-    const username = request.query.username;
-    const password = request.query.password;
-
-    accountService
-        .getJwtForUser(username, password)
-        .then((token) => {
-            if (token) {
-                response.send({
-                    message: `Hello, ${username}`,
-                    token: token,
-                });
-            } else {
-                response.status(400).send({
-                    errors: "Nope, your combination of username and password is wrong",
-                });
-            }
-        })
-        .catch(function (error) {
-            response.status(500);
-            console.error(error);
-        });
-});
+app.use("/books", bookController);
+app.use("/login", loginController);
 
 app.listen(3000, () => {
     console.log("Bookish is listening on port 3000");

@@ -4,4 +4,11 @@ function getAllBooks() {
     return bookRepository.getAllBooks();
 }
 
-module.exports = { getAllBooks: getAllBooks };
+function getBook(id) {
+    return bookRepository.getBook(id);
+}
+
+module.exports = {
+    getAllBooks: getAllBooks,
+    getBook: getBook,
+};
